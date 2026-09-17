@@ -45,12 +45,13 @@ print("Status code:", response.status_code)
 print()
 
 
-# Get normal Google search results
+# Get normal Google results
 results = data["organic_results"]
 
 
 # Display the first 5 results
 for result in results[:5]:
-    print(result["title"])
-    print(result["link"])
+    print("Title:", result["title"])
+    print("Link:", result["link"])
+    print("Snippet:", result.get("snippet", "No snippet available"))
     print()
