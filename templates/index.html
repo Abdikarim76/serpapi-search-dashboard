@@ -3,25 +3,58 @@
 <head>
     <title>SerpApi Search Dashboard</title>
 </head>
+
 <body>
 
     <h1>SerpApi Search Dashboard</h1>
 
     <form method="POST">
+
         <input
             type="text"
             name="search_term"
             placeholder="Enter search keyword"
+            value="{{ search_term }}"
         >
 
         <button type="submit">
             Search
         </button>
+
     </form>
 
-    {% if search_term %}
-        <h2>You searched for:</h2>
-        <p>{{ search_term }}</p>
+
+    {% if error %}
+
+        <p>{{ error }}</p>
+
+    {% endif %}
+
+
+    {% if results %}
+
+        <h2>Search Results</h2>
+
+        {% for result in results %}
+
+            <h3>
+                {{ loop.index }}. {{ result.title }}
+            </h3>
+
+            <p>
+                <a href="{{ result.link }}" target="_blank">
+                    {{ result.link }}
+                </a>
+            </p>
+
+            <p>
+                {{ result.snippet }}
+            </p>
+
+            <hr>
+
+        {% endfor %}
+
     {% endif %}
 
 </body>
