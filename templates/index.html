@@ -7,10 +7,22 @@
 
     <h1>SerpApi Search Dashboard</h1>
 
-    <form>
-        <input type="text" placeholder="Enter search keyword">
-        <button type="submit">Search</button>
+    <form method="POST">
+        <input
+            type="text"
+            name="search_term"
+            placeholder="Enter search keyword"
+        >
+
+        <button type="submit">
+            Search
+        </button>
     </form>
+
+    {% if search_term %}
+        <h2>You searched for:</h2>
+        <p>{{ search_term }}</p>
+    {% endif %}
 
 </body>
 </html>
