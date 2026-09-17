@@ -13,7 +13,6 @@ def create_database():
     connection = sqlite3.connect(database_file)
     cursor = connection.cursor()
 
-    # Create searches table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS searches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,7 +21,6 @@ def create_database():
     )
     """)
 
-    # Create results table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,6 +69,30 @@ def save_result(search_id, title, link, snippet):
     connection.close()
 
 
+def get_search_history():
+    connection = sqlite3.connect(database_file)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    SELECT id, search_term, created_at
+    FROM searches
+    ORDER BY id DESC
+    """)
+
+    searches = cursor.fetchall()
+
+    connection.close()
+
+    return searches
+
+
 if __name__ == "__main__":
     create_database()
-    print("Database ready.")
+
+    history = get_search_history()
+
+    print("Saved searches:")
+    print()
+
+    for search in history:
+        print(search)
