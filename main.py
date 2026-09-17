@@ -5,53 +5,44 @@ import requests
 from dotenv import load_dotenv
 
 
-# Find the project folder
 project_folder = Path(__file__).resolve().parent
-
-# Find and load the .env file
 env_file = project_folder / ".env"
+
 load_dotenv(env_file)
 
-# Get SerpApi key
 api_key = os.getenv("SERPAPI_API_KEY")
 
-
-# Ask the user what they want to search
 search_term = input("What do you want to search for? ")
 
-
-# SerpApi endpoint
 url = "https://serpapi.com/search"
 
-
-# Parameters sent to SerpApi
 params = {
     "engine": "google",
     "q": search_term,
     "api_key": api_key
 }
 
+try:
+    response = requests.get(url, params=params, timeout=10)
 
-# Send GET request
-response = requests.get(url, params=params)
-
-
-# Convert JSON response into Python data
-data = response.json()
-
-
-print()
-print("Status code:", response.status_code)
-print()
-
-
-# Get normal Google results
-results = data["organic_results"]
-
-
-# Display the first 5 results
-for result in results[:5]:
-    print("Title:", result["title"])
-    print("Link:", result["link"])
-    print("Snippet:", result.get("snippet", "No snippet available"))
     print()
+    print("Status code:", response.status_code)
+    print()
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    results = data.get("organic_results", [])
+
+    if not results:
+        print("No search results were found.")
+    else:
+        for result in results[:5]:
+            print("Title:", result.get("title", "No title"))
+            print("Link:", result.get("link", "No link"))
+            print("Snippet:", result.get("snippet", "No snippet available"))
+            print()
+
+except requests.exceptions.RequestException as error:
+    print("Request failed:", error)
