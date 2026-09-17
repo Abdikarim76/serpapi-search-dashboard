@@ -30,8 +30,6 @@ create_database()
 def new_search():
     search_term = input("\nWhat do you want to search for? ")
 
-    search_id = save_search(search_term)
-
     url = "https://serpapi.com/search"
 
     params = {
@@ -51,9 +49,14 @@ def new_search():
         print("Status code:", response.status_code)
         print()
 
+        # Stop here if the HTTP request failed
         response.raise_for_status()
 
+        # Convert JSON response into Python data
         data = response.json()
+
+        # Request succeeded, so now save the search
+        search_id = save_search(search_term)
 
         results = data.get("organic_results", [])
 
