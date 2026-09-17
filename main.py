@@ -4,7 +4,7 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
-from database import create_database, save_search
+from database import create_database, save_search, save_result
 
 
 project_folder = Path(__file__).resolve().parent
@@ -14,14 +14,14 @@ load_dotenv(env_file)
 
 api_key = os.getenv("SERPAPI_API_KEY")
 
-# Make sure the database exists
+# Make sure database tables exist
 create_database()
 
-# Ask the user what they want to search
+# Ask user for search
 search_term = input("What do you want to search for? ")
 
-# Save the search term into SQLite
-save_search(search_term)
+# Save search and get its database ID
+search_id = save_search(search_term)
 
 url = "https://serpapi.com/search"
 
@@ -55,6 +55,13 @@ try:
         }
 
         cleaned_results.append(cleaned_result)
+
+        save_result(
+            search_id,
+            cleaned_result["title"],
+            cleaned_result["link"],
+            cleaned_result["snippet"]
+        )
 
     if not cleaned_results:
         print("No search results were found.")
