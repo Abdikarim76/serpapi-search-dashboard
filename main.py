@@ -35,13 +35,28 @@ try:
 
     results = data.get("organic_results", [])
 
-    if not results:
+    cleaned_results = []
+
+    for result in results[:5]:
+
+        cleaned_result = {
+            "title": result.get("title", "No title"),
+            "link": result.get("link", "No link"),
+            "snippet": result.get("snippet", "No snippet available")
+        }
+
+        cleaned_results.append(cleaned_result)
+
+    if not cleaned_results:
         print("No search results were found.")
+
     else:
-        for result in results[:5]:
-            print("Title:", result.get("title", "No title"))
-            print("Link:", result.get("link", "No link"))
-            print("Snippet:", result.get("snippet", "No snippet available"))
+        for number, result in enumerate(cleaned_results, start=1):
+
+            print(f"Result {number}")
+            print("Title:", result["title"])
+            print("Link:", result["link"])
+            print("Snippet:", result["snippet"])
             print()
 
 except requests.exceptions.RequestException as error:
