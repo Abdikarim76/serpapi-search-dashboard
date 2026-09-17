@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Saved Search Results</title>
+</head>
+
+<body>
+
+    <h1>Saved Search Results</h1>
+
+    <p>
+        <a href="/history">Back to Search History</a>
+    </p>
+
+    <p>
+        <a href="/">Back to Search</a>
+    </p>
+
+    {% if results %}
+
+        {% for result in results %}
+
+            <h3>
+                {{ loop.index }}. {{ result[1] }}
+            </h3>
+
+            <p>
+                <a href="{{ result[2] }}" target="_blank">
+                    {{ result[2] }}
+                </a>
+            </p>
+
+            <p>
+                {{ result[3] }}
+            </p>
+
+            <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>No saved results were found for this search.</p>
+
+    {% endif %}
+
+</body>
+</html>
