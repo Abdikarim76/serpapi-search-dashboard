@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 import requests
@@ -38,66 +39,88 @@ def new_search():
         "api_key": api_key
     }
 
-    try:
-        response = requests.get(
-            url,
-            params=params,
-            timeout=10
-        )
+    response = None
 
-        print()
-        print("Status code:", response.status_code)
-        print()
+    # Try the request a maximum of 2 times
+    for attempt in range(1, 3):
 
-        # Stop here if the HTTP request failed
-        response.raise_for_status()
+        try:
+            print(f"\nRequest attempt {attempt}...")
 
-        # Convert JSON response into Python data
-        data = response.json()
-
-        # Request succeeded, so now save the search
-        search_id = save_search(search_term)
-
-        results = data.get("organic_results", [])
-
-        cleaned_results = []
-
-        for result in results[:5]:
-
-            cleaned_result = {
-                "title": result.get("title", "No title"),
-                "link": result.get("link", "No link"),
-                "snippet": result.get(
-                    "snippet",
-                    "No snippet available"
-                )
-            }
-
-            cleaned_results.append(cleaned_result)
-
-            save_result(
-                search_id,
-                cleaned_result["title"],
-                cleaned_result["link"],
-                cleaned_result["snippet"]
+            response = requests.get(
+                url,
+                params=params,
+                timeout=10
             )
 
-        if not cleaned_results:
-            print("No search results were found.")
+            response.raise_for_status()
 
-        else:
-            for number, result in enumerate(
-                cleaned_results,
-                start=1
-            ):
-                print(f"Result {number}")
-                print("Title:", result["title"])
-                print("Link:", result["link"])
-                print("Snippet:", result["snippet"])
-                print()
+            # Request succeeded
+            break
 
-    except requests.exceptions.RequestException as error:
-        print("Request failed:", error)
+        except requests.exceptions.Timeout:
+
+            print("The request timed out.")
+
+            if attempt < 2:
+                print("Trying again...")
+                time.sleep(2)
+
+            else:
+                print("The request failed after 2 attempts.")
+                return
+
+        except requests.exceptions.RequestException as error:
+            print("Request failed:", error)
+            return
+
+    # Convert JSON response into Python data
+    data = response.json()
+
+    print()
+    print("Status code:", response.status_code)
+    print()
+
+    # Only save after the API request succeeds
+    search_id = save_search(search_term)
+
+    results = data.get("organic_results", [])
+
+    cleaned_results = []
+
+    for result in results[:5]:
+
+        cleaned_result = {
+            "title": result.get("title", "No title"),
+            "link": result.get("link", "No link"),
+            "snippet": result.get(
+                "snippet",
+                "No snippet available"
+            )
+        }
+
+        cleaned_results.append(cleaned_result)
+
+        save_result(
+            search_id,
+            cleaned_result["title"],
+            cleaned_result["link"],
+            cleaned_result["snippet"]
+        )
+
+    if not cleaned_results:
+        print("No search results were found.")
+
+    else:
+        for number, result in enumerate(
+            cleaned_results,
+            start=1
+        ):
+            print(f"Result {number}")
+            print("Title:", result["title"])
+            print("Link:", result["link"])
+            print("Snippet:", result["snippet"])
+            print()
 
 
 def show_history():
