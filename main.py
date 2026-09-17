@@ -8,7 +8,8 @@ from database import (
     create_database,
     save_search,
     save_result,
-    get_search_history
+    get_search_history,
+    get_results_for_search
 )
 
 
@@ -111,9 +112,42 @@ def show_history():
         search_term = search[1]
         created_at = search[2]
 
-        print(
-            f"{search_id}. {search_term} | {created_at}"
-        )
+        print(f"{search_id}. {search_term} | {created_at}")
+
+    print()
+
+    selected_id = input(
+        "Enter a search ID to view its saved results, "
+        "or press Enter to go back: "
+    )
+
+    if selected_id == "":
+        return
+
+    if not selected_id.isdigit():
+        print("Invalid search ID.")
+        return
+
+    selected_id = int(selected_id)
+
+    results = get_results_for_search(selected_id)
+
+    if not results:
+        print("No saved results found for that search.")
+        return
+
+    print()
+
+    for number, result in enumerate(results, start=1):
+        title = result[1]
+        link = result[2]
+        snippet = result[3]
+
+        print(f"Result {number}")
+        print("Title:", title)
+        print("Link:", link)
+        print("Snippet:", snippet)
+        print()
 
 
 while True:

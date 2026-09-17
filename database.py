@@ -86,13 +86,28 @@ def get_search_history():
     return searches
 
 
+def get_results_for_search(search_id):
+    connection = sqlite3.connect(database_file)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, title, link, snippet
+        FROM results
+        WHERE search_id = ?
+        ORDER BY id ASC
+        """,
+        (search_id,)
+    )
+
+    results = cursor.fetchall()
+
+    connection.close()
+
+    return results
+
+
 if __name__ == "__main__":
     create_database()
 
-    history = get_search_history()
-
-    print("Saved searches:")
-    print()
-
-    for search in history:
-        print(search)
+    print("Database ready.")
