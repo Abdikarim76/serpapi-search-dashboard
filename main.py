@@ -4,76 +4,136 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
-from database import create_database, save_search, save_result
+from database import (
+    create_database,
+    save_search,
+    save_result,
+    get_search_history
+)
 
 
+# Find project folder
 project_folder = Path(__file__).resolve().parent
-env_file = project_folder / ".env"
 
+# Load .env file
+env_file = project_folder / ".env"
 load_dotenv(env_file)
 
+# Get SerpApi key
 api_key = os.getenv("SERPAPI_API_KEY")
 
 # Make sure database tables exist
 create_database()
 
-# Ask user for search
-search_term = input("What do you want to search for? ")
 
-# Save search and get its database ID
-search_id = save_search(search_term)
+def new_search():
+    search_term = input("\nWhat do you want to search for? ")
 
-url = "https://serpapi.com/search"
+    search_id = save_search(search_term)
 
-params = {
-    "engine": "google",
-    "q": search_term,
-    "api_key": api_key
-}
+    url = "https://serpapi.com/search"
 
-try:
-    response = requests.get(url, params=params, timeout=10)
+    params = {
+        "engine": "google",
+        "q": search_term,
+        "api_key": api_key
+    }
 
-    print()
-    print("Status code:", response.status_code)
-    print()
-
-    response.raise_for_status()
-
-    data = response.json()
-
-    results = data.get("organic_results", [])
-
-    cleaned_results = []
-
-    for result in results[:5]:
-
-        cleaned_result = {
-            "title": result.get("title", "No title"),
-            "link": result.get("link", "No link"),
-            "snippet": result.get("snippet", "No snippet available")
-        }
-
-        cleaned_results.append(cleaned_result)
-
-        save_result(
-            search_id,
-            cleaned_result["title"],
-            cleaned_result["link"],
-            cleaned_result["snippet"]
+    try:
+        response = requests.get(
+            url,
+            params=params,
+            timeout=10
         )
 
-    if not cleaned_results:
-        print("No search results were found.")
+        print()
+        print("Status code:", response.status_code)
+        print()
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        results = data.get("organic_results", [])
+
+        cleaned_results = []
+
+        for result in results[:5]:
+
+            cleaned_result = {
+                "title": result.get("title", "No title"),
+                "link": result.get("link", "No link"),
+                "snippet": result.get(
+                    "snippet",
+                    "No snippet available"
+                )
+            }
+
+            cleaned_results.append(cleaned_result)
+
+            save_result(
+                search_id,
+                cleaned_result["title"],
+                cleaned_result["link"],
+                cleaned_result["snippet"]
+            )
+
+        if not cleaned_results:
+            print("No search results were found.")
+
+        else:
+            for number, result in enumerate(
+                cleaned_results,
+                start=1
+            ):
+                print(f"Result {number}")
+                print("Title:", result["title"])
+                print("Link:", result["link"])
+                print("Snippet:", result["snippet"])
+                print()
+
+    except requests.exceptions.RequestException as error:
+        print("Request failed:", error)
+
+
+def show_history():
+    history = get_search_history()
+
+    print("\nSaved searches:")
+    print()
+
+    if not history:
+        print("No saved searches yet.")
+        return
+
+    for search in history:
+        search_id = search[0]
+        search_term = search[1]
+        created_at = search[2]
+
+        print(
+            f"{search_id}. {search_term} | {created_at}"
+        )
+
+
+while True:
+
+    print("\n===== SerpApi Search CLI =====")
+    print("1. New search")
+    print("2. View search history")
+    print("3. Exit")
+
+    choice = input("\nChoose an option: ")
+
+    if choice == "1":
+        new_search()
+
+    elif choice == "2":
+        show_history()
+
+    elif choice == "3":
+        print("Goodbye.")
+        break
 
     else:
-        for number, result in enumerate(cleaned_results, start=1):
-
-            print(f"Result {number}")
-            print("Title:", result["title"])
-            print("Link:", result["link"])
-            print("Snippet:", result["snippet"])
-            print()
-
-except requests.exceptions.RequestException as error:
-    print("Request failed:", error)
+        print("Invalid option. Choose 1, 2, or 3.")
