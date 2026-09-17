@@ -9,24 +9,21 @@ from flask import Flask, render_template, request
 from database import (
     create_database,
     save_search,
-    save_result
+    save_result,
+    get_search_history
 )
 
 
 app = Flask(__name__)
 
 
-# Find project folder
 project_folder = Path(__file__).resolve().parent
 
-# Load .env
 env_file = project_folder / ".env"
 load_dotenv(env_file)
 
-# Get SerpApi key
 api_key = os.getenv("SERPAPI_API_KEY")
 
-# Make sure database exists
 create_database()
 
 
@@ -56,7 +53,6 @@ def home():
 
             response = None
 
-            # Maximum 2 attempts
             for attempt in range(1, 3):
 
                 try:
@@ -67,8 +63,6 @@ def home():
                     )
 
                     response.raise_for_status()
-
-                    # Success
                     break
 
                 except requests.exceptions.Timeout:
@@ -89,7 +83,6 @@ def home():
 
                 organic_results = data.get("organic_results", [])
 
-                # Save search only after successful API response
                 search_id = save_search(search_term)
 
                 for result in organic_results[:5]:
@@ -117,6 +110,17 @@ def home():
         search_term=search_term,
         results=results,
         error=error
+    )
+
+
+@app.route("/history")
+def history():
+
+    searches = get_search_history()
+
+    return render_template(
+        "history.html",
+        searches=searches
     )
 
 

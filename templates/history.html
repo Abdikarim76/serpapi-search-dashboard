@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search History</title>
+</head>
+
+<body>
+
+    <h1>Search History</h1>
+
+    <p>
+        <a href="/">Back to Search</a>
+    </p>
+
+    {% if searches %}
+
+        {% for search in searches %}
+
+            <p>
+                {{ search[0] }}.
+                {{ search[1] }}
+                |
+                {{ search[2] }}
+            </p>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>No saved searches yet.</p>
+
+    {% endif %}
+
+</body>
+</html>
