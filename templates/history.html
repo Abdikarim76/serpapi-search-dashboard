@@ -17,8 +17,12 @@
         {% for search in searches %}
 
             <p>
-                {{ search[0] }}.
-                {{ search[1] }}
+                <strong>{{ search[0] }}.</strong>
+
+                <a href="/history/{{ search[0] }}">
+                    {{ search[1] }}
+                </a>
+
                 |
                 {{ search[2] }}
             </p>

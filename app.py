@@ -21,11 +21,11 @@ app = Flask(__name__)
 # Find project folder
 project_folder = Path(__file__).resolve().parent
 
-# Load .env file
+# Load environment variables
 env_file = project_folder / ".env"
 load_dotenv(env_file)
 
-# Get SerpApi API key
+# Get SerpApi key
 api_key = os.getenv("SERPAPI_API_KEY")
 
 # Make sure database tables exist
@@ -41,9 +41,13 @@ def home():
 
     if request.method == "POST":
 
-        search_term = request.form.get("search_term", "").strip()
+        search_term = request.form.get(
+            "search_term",
+            ""
+        ).strip()
 
         if not search_term:
+
             error = "Please enter something to search for."
 
         else:
@@ -58,10 +62,10 @@ def home():
 
             response = None
 
-            # Try the request a maximum of 2 times
             for attempt in range(1, 3):
 
                 try:
+
                     response = requests.get(
                         url,
                         params=params,
@@ -70,19 +74,22 @@ def home():
 
                     response.raise_for_status()
 
-                    # Request succeeded
                     break
 
                 except requests.exceptions.Timeout:
 
                     if attempt < 2:
+
                         time.sleep(2)
 
                     else:
+
                         error = "The search request timed out."
 
                 except requests.exceptions.RequestException as request_error:
+
                     error = f"Search request failed: {request_error}"
+
                     break
 
             if response is not None and error is None:
@@ -94,7 +101,6 @@ def home():
                     []
                 )
 
-                # Save successful search
                 search_id = save_search(search_term)
 
                 for result in organic_results[:5]:
@@ -104,10 +110,12 @@ def home():
                             "title",
                             "No title"
                         ),
+
                         "link": result.get(
                             "link",
                             "No link"
                         ),
+
                         "snippet": result.get(
                             "snippet",
                             "No snippet available"
