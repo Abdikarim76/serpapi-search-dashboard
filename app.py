@@ -195,5 +195,107 @@ def api_history_results(search_id):
     return jsonify(results_data)
 
 
+@app.route("/api/search", methods=["POST"])
+def api_search():
+
+    # Read JSON sent by the client
+    body = request.get_json(silent=True)
+
+    if not body:
+        return jsonify({
+            "error": "JSON body is required."
+        }), 400
+
+    query = body.get("query", "").strip()
+
+    if not query:
+        return jsonify({
+            "error": "The query field is required."
+        }), 400
+
+    url = "https://serpapi.com/search"
+
+    params = {
+        "engine": "google",
+        "q": query,
+        "api_key": api_key
+    }
+
+    response = None
+
+    for attempt in range(1, 3):
+
+        try:
+
+            response = requests.get(
+                url,
+                params=params,
+                timeout=10
+            )
+
+            response.raise_for_status()
+
+            break
+
+        except requests.exceptions.Timeout:
+
+            if attempt < 2:
+                time.sleep(2)
+
+            else:
+                return jsonify({
+                    "error": "SerpApi request timed out."
+                }), 504
+
+        except requests.exceptions.RequestException as error:
+
+            return jsonify({
+                "error": str(error)
+            }), 502
+
+    data = response.json()
+
+    organic_results = data.get(
+        "organic_results",
+        []
+    )
+
+    search_id = save_search(query)
+
+    cleaned_results = []
+
+    for result in organic_results[:5]:
+
+        cleaned_result = {
+            "title": result.get(
+                "title",
+                "No title"
+            ),
+            "link": result.get(
+                "link",
+                "No link"
+            ),
+            "snippet": result.get(
+                "snippet",
+                "No snippet available"
+            )
+        }
+
+        cleaned_results.append(cleaned_result)
+
+        save_result(
+            search_id,
+            cleaned_result["title"],
+            cleaned_result["link"],
+            cleaned_result["snippet"]
+        )
+
+    return jsonify({
+        "search_id": search_id,
+        "query": query,
+        "results": cleaned_results
+    }), 200
+
+
 if __name__ == "__main__":
     app.run(debug=True)
