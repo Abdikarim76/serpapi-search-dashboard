@@ -176,5 +176,24 @@ def api_history():
     return jsonify(history_data)
 
 
+@app.route("/api/history/<int:search_id>")
+def api_history_results(search_id):
+
+    results = get_results_for_search(search_id)
+
+    results_data = []
+
+    for result in results:
+
+        results_data.append({
+            "id": result[0],
+            "title": result[1],
+            "link": result[2],
+            "snippet": result[3]
+        })
+
+    return jsonify(results_data)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
