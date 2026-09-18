@@ -4,7 +4,7 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 
 from database import (
     create_database,
@@ -25,7 +25,7 @@ project_folder = Path(__file__).resolve().parent
 env_file = project_folder / ".env"
 load_dotenv(env_file)
 
-# Get SerpApi key
+# Get SerpApi API key
 api_key = os.getenv("SERPAPI_API_KEY")
 
 # Make sure database tables exist
@@ -79,11 +79,9 @@ def home():
                 except requests.exceptions.Timeout:
 
                     if attempt < 2:
-
                         time.sleep(2)
 
                     else:
-
                         error = "The search request timed out."
 
                 except requests.exceptions.RequestException as request_error:
@@ -110,12 +108,10 @@ def home():
                             "title",
                             "No title"
                         ),
-
                         "link": result.get(
                             "link",
                             "No link"
                         ),
-
                         "snippet": result.get(
                             "snippet",
                             "No snippet available"
@@ -160,6 +156,24 @@ def history_results(search_id):
         results=results,
         search_id=search_id
     )
+
+
+@app.route("/api/history")
+def api_history():
+
+    searches = get_search_history()
+
+    history_data = []
+
+    for search in searches:
+
+        history_data.append({
+            "id": search[0],
+            "search_term": search[1],
+            "created_at": search[2]
+        })
+
+    return jsonify(history_data)
 
 
 if __name__ == "__main__":
