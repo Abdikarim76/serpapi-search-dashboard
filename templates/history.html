@@ -2,36 +2,49 @@
 <html>
 <head>
     <title>Search History</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
 
-    <h1>Search History</h1>
+    <div class="navigation">
+        <a href="/">Search</a>
+        |
+        <a href="/history">Search History</a>
+    </div>
 
-    <p>
-        <a href="/">Back to Search</a>
-    </p>
+    <h1>Search History</h1>
 
     {% if searches %}
 
         {% for search in searches %}
 
-            <p>
-                <strong>{{ search[0] }}.</strong>
+            <div class="result-card">
 
-                <a href="/history/{{ search[0] }}">
-                    {{ search[1] }}
-                </a>
+                <h3>
+                    {{ search[0] }}.
+                    <a href="/history/{{ search[0] }}">
+                        {{ search[1] }}
+                    </a>
+                </h3>
 
-                |
-                {{ search[2] }}
-            </p>
+                <p>
+                    Searched at: {{ search[2] }}
+                </p>
+
+            </div>
 
         {% endfor %}
 
     {% else %}
 
-        <p>No saved searches yet.</p>
+        <div class="result-card">
+            <p>No saved searches yet.</p>
+        </div>
 
     {% endif %}
 

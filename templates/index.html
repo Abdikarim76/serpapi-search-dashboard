@@ -2,9 +2,20 @@
 <html>
 <head>
     <title>SerpApi Search Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
+
+    <div class="navigation">
+        <a href="/">Search</a>
+        |
+        <a href="/history">Search History</a>
+    </div>
 
     <h1>SerpApi Search Dashboard</h1>
 
@@ -23,13 +34,13 @@
 
     </form>
 
-
     {% if error %}
 
-        <p>{{ error }}</p>
+        <div class="error">
+            {{ error }}
+        </div>
 
     {% endif %}
-
 
     {% if results %}
 
@@ -37,21 +48,23 @@
 
         {% for result in results %}
 
-            <h3>
-                {{ loop.index }}. {{ result.title }}
-            </h3>
+            <div class="result-card">
 
-            <p>
-                <a href="{{ result.link }}" target="_blank">
-                    {{ result.link }}
-                </a>
-            </p>
+                <h3>
+                    {{ loop.index }}. {{ result.title }}
+                </h3>
 
-            <p>
-                {{ result.snippet }}
-            </p>
+                <p>
+                    <a href="{{ result.link }}" target="_blank">
+                        {{ result.link }}
+                    </a>
+                </p>
 
-            <hr>
+                <p>
+                    {{ result.snippet }}
+                </p>
+
+            </div>
 
         {% endfor %}
 

@@ -1,35 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Search History</title>
+    <title>Saved Search Results</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
 
-    <h1>Search History</h1>
+    <div class="navigation">
+        <a href="/">Search</a>
+        |
+        <a href="/history">Search History</a>
+    </div>
 
-    <p>
-        <a href="/">Back to Search</a>
-    </p>
+    <h1>Saved Search Results</h1>
 
-    {% if searches %}
+    {% if results %}
 
-        {% for search in searches %}
+        {% for result in results %}
 
-            <p>
-                <a href="/history/{{ search[0] }}">
-                    {{ search[0] }}. {{ search[1] }}
-                </a>
+            <div class="result-card">
 
-                |
-                {{ search[2] }}
-            </p>
+                <h3>
+                    {{ loop.index }}. {{ result[1] }}
+                </h3>
+
+                <p>
+                    <a href="{{ result[2] }}" target="_blank">
+                        {{ result[2] }}
+                    </a>
+                </p>
+
+                <p>
+                    {{ result[3] }}
+                </p>
+
+            </div>
 
         {% endfor %}
 
     {% else %}
 
-        <p>No saved searches yet.</p>
+        <div class="result-card">
+            <p>No saved results were found for this search.</p>
+        </div>
 
     {% endif %}
 
