@@ -201,32 +201,58 @@ def api_search():
     # Read JSON sent by the client
     body = request.get_json(silent=True)
 
-    # No JSON was sent at all
     if body is None:
 
         return jsonify({
             "error": "JSON body is required."
         }), 400
 
-    # Get the query value
     query = body.get(
         "query",
         ""
     ).strip()
 
-    # JSON exists, but query is missing or empty
     if not query:
 
         return jsonify({
             "error": "The query field is required."
         }), 400
 
+    # Read page number from the URL
+    page_text = request.args.get(
+        "page",
+        "1"
+    )
+
+    # Page must be a positive whole number
+    if not page_text.isdigit():
+
+        return jsonify({
+            "error": "Page must be a positive whole number."
+        }), 400
+
+    page = int(page_text)
+
+    if page < 1:
+
+        return jsonify({
+            "error": "Page must be 1 or greater."
+        }), 400
+
+    # Number of Google results per page
+    results_per_page = 5
+
+    # Calculate where this page starts
+    start = (page - 1) * results_per_page
+
     url = "https://serpapi.com/search"
 
     params = {
         "engine": "google",
         "q": query,
-        "api_key": api_key
+        "api_key": api_key,
+        "start": start,
+        "num": results_per_page
     }
 
     response = None
@@ -274,7 +300,7 @@ def api_search():
 
     cleaned_results = []
 
-    for result in organic_results[:5]:
+    for result in organic_results[:results_per_page]:
 
         cleaned_result = {
             "title": result.get(
@@ -303,6 +329,8 @@ def api_search():
     return jsonify({
         "search_id": search_id,
         "query": query,
+        "page": page,
+        "results_per_page": results_per_page,
         "results": cleaned_results
     }), 200
 
