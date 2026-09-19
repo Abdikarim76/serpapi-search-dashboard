@@ -5,6 +5,7 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 
 from database import (
     create_database,
@@ -16,6 +17,20 @@ from database import (
 
 
 app = Flask(__name__)
+
+
+# Allow our future frontend to access only API routes
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000"
+            ]
+        }
+    }
+)
 
 
 # Maximum allowed search length
@@ -46,7 +61,6 @@ def search_serpapi(query, start=0, num=5):
         HTTP status code
     """
 
-    # Make sure the API key exists
     if not api_key:
 
         return (
@@ -75,7 +89,6 @@ def search_serpapi(query, start=0, num=5):
                 timeout=10
             )
 
-            # Handle rate limit
             if response.status_code == 429:
 
                 return (
@@ -252,7 +265,6 @@ def api_history_results(search_id):
 @app.route("/api/search", methods=["POST"])
 def api_search():
 
-    # Read JSON sent by client
     body = request.get_json(silent=True)
 
     if body is None:
@@ -261,7 +273,6 @@ def api_search():
             "error": "JSON body is required."
         }), 400
 
-    # JSON must be an object like {"query": "python"}
     if not isinstance(body, dict):
 
         return jsonify({
@@ -270,14 +281,12 @@ def api_search():
 
     query_value = body.get("query")
 
-    # Query must exist
     if query_value is None:
 
         return jsonify({
             "error": "The query field is required."
         }), 400
 
-    # Query must be text
     if not isinstance(query_value, str):
 
         return jsonify({
@@ -286,14 +295,12 @@ def api_search():
 
     query = query_value.strip()
 
-    # Query cannot be empty
     if not query:
 
         return jsonify({
             "error": "The query field cannot be empty."
         }), 400
 
-    # Query cannot be too long
     if len(query) > MAX_QUERY_LENGTH:
 
         return jsonify({
@@ -303,7 +310,6 @@ def api_search():
             )
         }), 400
 
-    # Read page number
     page_text = request.args.get(
         "page",
         "1"
