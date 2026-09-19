@@ -32,6 +32,98 @@ api_key = os.getenv("SERPAPI_API_KEY")
 create_database()
 
 
+def search_serpapi(query, start=0, num=5):
+    """
+    Send a search request to SerpApi.
+
+    Returns:
+        results
+        error message
+        HTTP status code
+    """
+
+    url = "https://serpapi.com/search"
+
+    params = {
+        "engine": "google",
+        "q": query,
+        "api_key": api_key,
+        "start": start,
+        "num": num
+    }
+
+    for attempt in range(1, 3):
+
+        try:
+
+            response = requests.get(
+                url,
+                params=params,
+                timeout=10
+            )
+
+            # Handle rate limit
+            if response.status_code == 429:
+
+                return (
+                    [],
+                    "SerpApi rate limit reached. Please try again later.",
+                    429
+                )
+
+            response.raise_for_status()
+
+            data = response.json()
+
+            organic_results = data.get(
+                "organic_results",
+                []
+            )
+
+            cleaned_results = []
+
+            for result in organic_results[:num]:
+
+                cleaned_results.append({
+                    "title": result.get(
+                        "title",
+                        "No title"
+                    ),
+                    "link": result.get(
+                        "link",
+                        "No link"
+                    ),
+                    "snippet": result.get(
+                        "snippet",
+                        "No snippet available"
+                    )
+                })
+
+            return cleaned_results, None, 200
+
+        except requests.exceptions.Timeout:
+
+            if attempt < 2:
+
+                time.sleep(2)
+
+            else:
+
+                return (
+                    [],
+                    "SerpApi request timed out.",
+                    504
+                )
+
+        except requests.exceptions.RequestException as error:
+
+            return (
+                [],
+                f"SerpApi request failed: {error}",
+                502
+            )
+
+
 @app.route("/", methods=["GET", "POST"])
 def home():
 
@@ -52,89 +144,21 @@ def home():
 
         else:
 
-            url = "https://serpapi.com/search"
+            results, error, status_code = search_serpapi(
+                search_term
+            )
 
-            params = {
-                "engine": "google",
-                "q": search_term,
-                "api_key": api_key
-            }
-
-            response = None
-
-            for attempt in range(1, 3):
-
-                try:
-
-                    response = requests.get(
-                        url,
-                        params=params,
-                        timeout=10
-                    )
-
-                    # Handle SerpApi rate limit
-                    if response.status_code == 429:
-
-                        error = (
-                            "SerpApi rate limit reached. "
-                            "Please try again later."
-                        )
-
-                        break
-
-                    response.raise_for_status()
-
-                    break
-
-                except requests.exceptions.Timeout:
-
-                    if attempt < 2:
-                        time.sleep(2)
-
-                    else:
-                        error = "The search request timed out."
-
-                except requests.exceptions.RequestException as request_error:
-
-                    error = f"Search request failed: {request_error}"
-
-                    break
-
-            if response is not None and error is None:
-
-                data = response.json()
-
-                organic_results = data.get(
-                    "organic_results",
-                    []
-                )
+            if error is None:
 
                 search_id = save_search(search_term)
 
-                for result in organic_results[:5]:
-
-                    cleaned_result = {
-                        "title": result.get(
-                            "title",
-                            "No title"
-                        ),
-                        "link": result.get(
-                            "link",
-                            "No link"
-                        ),
-                        "snippet": result.get(
-                            "snippet",
-                            "No snippet available"
-                        )
-                    }
-
-                    results.append(cleaned_result)
+                for result in results:
 
                     save_result(
                         search_id,
-                        cleaned_result["title"],
-                        cleaned_result["link"],
-                        cleaned_result["snippet"]
+                        result["title"],
+                        result["link"],
+                        result["snippet"]
                     )
 
     return render_template(
@@ -208,7 +232,7 @@ def api_history_results(search_id):
 @app.route("/api/search", methods=["POST"])
 def api_search():
 
-    # Read JSON sent by the client
+    # Read JSON sent by client
     body = request.get_json(silent=True)
 
     if body is None:
@@ -228,7 +252,7 @@ def api_search():
             "error": "The query field is required."
         }), 400
 
-    # Read page number from the URL
+    # Read page number
     page_text = request.args.get(
         "page",
         "1"
@@ -250,98 +274,32 @@ def api_search():
 
     results_per_page = 5
 
-    # Calculate where the requested page starts
-    start = (page - 1) * results_per_page
+    start = (
+        page - 1
+    ) * results_per_page
 
-    url = "https://serpapi.com/search"
-
-    params = {
-        "engine": "google",
-        "q": query,
-        "api_key": api_key,
-        "start": start,
-        "num": results_per_page
-    }
-
-    response = None
-
-    for attempt in range(1, 3):
-
-        try:
-
-            response = requests.get(
-                url,
-                params=params,
-                timeout=10
-            )
-
-            # Handle SerpApi rate limit separately
-            if response.status_code == 429:
-
-                return jsonify({
-                    "error": (
-                        "SerpApi rate limit reached. "
-                        "Please try again later."
-                    )
-                }), 429
-
-            response.raise_for_status()
-
-            break
-
-        except requests.exceptions.Timeout:
-
-            if attempt < 2:
-
-                time.sleep(2)
-
-            else:
-
-                return jsonify({
-                    "error": "SerpApi request timed out."
-                }), 504
-
-        except requests.exceptions.RequestException as error:
-
-            return jsonify({
-                "error": str(error)
-            }), 502
-
-    data = response.json()
-
-    organic_results = data.get(
-        "organic_results",
-        []
+    # Reuse the same SerpApi function
+    results, error, status_code = search_serpapi(
+        query,
+        start=start,
+        num=results_per_page
     )
+
+    if error is not None:
+
+        return jsonify({
+            "error": error
+        }), status_code
 
     search_id = save_search(query)
 
-    cleaned_results = []
-
-    for result in organic_results[:results_per_page]:
-
-        cleaned_result = {
-            "title": result.get(
-                "title",
-                "No title"
-            ),
-            "link": result.get(
-                "link",
-                "No link"
-            ),
-            "snippet": result.get(
-                "snippet",
-                "No snippet available"
-            )
-        }
-
-        cleaned_results.append(cleaned_result)
+    for result in results:
 
         save_result(
             search_id,
-            cleaned_result["title"],
-            cleaned_result["link"],
-            cleaned_result["snippet"]
+            result["title"],
+            result["link"],
+            result["snippet"]
         )
 
     return jsonify({
@@ -349,7 +307,7 @@ def api_search():
         "query": query,
         "page": page,
         "results_per_page": results_per_page,
-        "results": cleaned_results
+        "results": results
     }), 200
 
 
