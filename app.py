@@ -19,7 +19,7 @@ from database import (
 app = Flask(__name__)
 
 
-# Allow our future frontend to access only API routes
+# Allow only approved frontend origins to access API routes
 CORS(
     app,
     resources={
@@ -61,6 +61,7 @@ def search_serpapi(query, start=0, num=5):
         HTTP status code
     """
 
+    # Make sure API key exists
     if not api_key:
 
         return (
@@ -89,6 +90,7 @@ def search_serpapi(query, start=0, num=5):
                 timeout=10
             )
 
+            # Handle API rate limit
             if response.status_code == 429:
 
                 return (
@@ -265,14 +267,17 @@ def api_history_results(search_id):
 @app.route("/api/search", methods=["POST"])
 def api_search():
 
+    # Read JSON sent by client
     body = request.get_json(silent=True)
 
+    # JSON body must exist
     if body is None:
 
         return jsonify({
             "error": "JSON body is required."
         }), 400
 
+    # JSON body must be an object
     if not isinstance(body, dict):
 
         return jsonify({
@@ -281,12 +286,14 @@ def api_search():
 
     query_value = body.get("query")
 
+    # Query must exist
     if query_value is None:
 
         return jsonify({
             "error": "The query field is required."
         }), 400
 
+    # Query must be text
     if not isinstance(query_value, str):
 
         return jsonify({
@@ -295,12 +302,14 @@ def api_search():
 
     query = query_value.strip()
 
+    # Query cannot be empty
     if not query:
 
         return jsonify({
             "error": "The query field cannot be empty."
         }), 400
 
+    # Query cannot be too long
     if len(query) > MAX_QUERY_LENGTH:
 
         return jsonify({
@@ -310,6 +319,7 @@ def api_search():
             )
         }), 400
 
+    # Read page number from URL
     page_text = request.args.get(
         "page",
         "1"
@@ -331,10 +341,12 @@ def api_search():
 
     results_per_page = 5
 
+    # Calculate where this page starts
     start = (
         page - 1
     ) * results_per_page
 
+    # Search SerpApi
     results, error, status_code = search_serpapi(
         query,
         start=start,
@@ -347,8 +359,10 @@ def api_search():
             "error": error
         }), status_code
 
+    # Save search
     search_id = save_search(query)
 
+    # Save results
     for result in results:
 
         save_result(
@@ -369,6 +383,6 @@ def api_search():
 
 if __name__ == "__main__":
     app.run(
-        debug=True,
+        debug=False,
         port=5001
     )
