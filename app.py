@@ -72,6 +72,16 @@ def home():
                         timeout=10
                     )
 
+                    # Handle SerpApi rate limit
+                    if response.status_code == 429:
+
+                        error = (
+                            "SerpApi rate limit reached. "
+                            "Please try again later."
+                        )
+
+                        break
+
                     response.raise_for_status()
 
                     break
@@ -224,7 +234,6 @@ def api_search():
         "1"
     )
 
-    # Page must be a positive whole number
     if not page_text.isdigit():
 
         return jsonify({
@@ -239,10 +248,9 @@ def api_search():
             "error": "Page must be 1 or greater."
         }), 400
 
-    # Number of Google results per page
     results_per_page = 5
 
-    # Calculate where this page starts
+    # Calculate where the requested page starts
     start = (page - 1) * results_per_page
 
     url = "https://serpapi.com/search"
@@ -266,6 +274,16 @@ def api_search():
                 params=params,
                 timeout=10
             )
+
+            # Handle SerpApi rate limit separately
+            if response.status_code == 429:
+
+                return jsonify({
+                    "error": (
+                        "SerpApi rate limit reached. "
+                        "Please try again later."
+                    )
+                }), 429
 
             response.raise_for_status()
 
