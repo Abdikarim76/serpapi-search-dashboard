@@ -18,6 +18,10 @@ from database import (
 app = Flask(__name__)
 
 
+# Maximum allowed search length
+MAX_QUERY_LENGTH = 200
+
+
 # Find project folder
 project_folder = Path(__file__).resolve().parent
 
@@ -41,6 +45,15 @@ def search_serpapi(query, start=0, num=5):
         error message
         HTTP status code
     """
+
+    # Make sure the API key exists
+    if not api_key:
+
+        return (
+            [],
+            "SerpApi API key is not configured.",
+            500
+        )
 
     url = "https://serpapi.com/search"
 
@@ -142,6 +155,13 @@ def home():
 
             error = "Please enter something to search for."
 
+        elif len(search_term) > MAX_QUERY_LENGTH:
+
+            error = (
+                f"Search must be {MAX_QUERY_LENGTH} "
+                "characters or fewer."
+            )
+
         else:
 
             results, error, status_code = search_serpapi(
@@ -241,15 +261,46 @@ def api_search():
             "error": "JSON body is required."
         }), 400
 
-    query = body.get(
-        "query",
-        ""
-    ).strip()
+    # JSON must be an object like {"query": "python"}
+    if not isinstance(body, dict):
 
-    if not query:
+        return jsonify({
+            "error": "JSON body must be an object."
+        }), 400
+
+    query_value = body.get("query")
+
+    # Query must exist
+    if query_value is None:
 
         return jsonify({
             "error": "The query field is required."
+        }), 400
+
+    # Query must be text
+    if not isinstance(query_value, str):
+
+        return jsonify({
+            "error": "The query field must be a string."
+        }), 400
+
+    query = query_value.strip()
+
+    # Query cannot be empty
+    if not query:
+
+        return jsonify({
+            "error": "The query field cannot be empty."
+        }), 400
+
+    # Query cannot be too long
+    if len(query) > MAX_QUERY_LENGTH:
+
+        return jsonify({
+            "error": (
+                f"The query must be {MAX_QUERY_LENGTH} "
+                "characters or fewer."
+            )
         }), 400
 
     # Read page number
@@ -278,7 +329,6 @@ def api_search():
         page - 1
     ) * results_per_page
 
-    # Reuse the same SerpApi function
     results, error, status_code = search_serpapi(
         query,
         start=start,
